@@ -14,7 +14,7 @@ class recsysBase:
     algo        = ''
     predictions = ''
     
-    def __init__(self, data, algorithm='svd', testset_percent=0):
+    def __init__(self, data, algorithm='svd', algo_options={}, testset_percent=0):
         if not data:
             return
             
@@ -64,6 +64,10 @@ class recsysBase:
     def save_to_file(self, file_path='predictions.csv'):
         pd.DataFrame(algo.predictions).to_csv(file_path, index=False)
 
+    def benchmark(self):
+        if self.algorithm == 'svd':
+            cross_validate(SVD(), data, measures=['RMSE', 'MAE'], cv=5, verbose=True)
+        
     def tune(self, opt_field='rmse', param_grid =
              {'n_epochs': [5, 10],
               'lr_all': [0.002, 0.005],
