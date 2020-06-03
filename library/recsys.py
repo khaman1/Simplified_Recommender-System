@@ -2,7 +2,7 @@ from surprise import SVD, KNNBasic
 from surprise import accuracy
 from surprise.model_selection import train_test_split
 from collections import defaultdict
-
+import pandas as pd
 
 class recsysBase:
     data        = ''
@@ -13,6 +13,9 @@ class recsysBase:
     predictions = ''
     
     def __init__(self, data, algorithm='svd', testset_percent=.25):
+        if not data:
+            return
+            
         self.data   = data
 
         ##
@@ -51,6 +54,12 @@ class recsysBase:
             self.test()
         
         accuracy.rmse(self.predictions)
+
+    def load_from_file(self, file_path='predictions.csv'):
+        self.predictions = np.genfromtxt(file_path, delimiter=',')
+
+    def save_to_file(self, file_path='predictions.csv'):
+        pd.DataFrame(algo.predictions).to_csv(file_path, index=False)
 
     def test(self):
         self.predictions = self.algo.test(self.testset)

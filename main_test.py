@@ -11,4 +11,4 @@ class MyTest(recsysBase):
 
 algo = MyTest(data)
 
-A = algo.get_top_n(n=10, target_uid=1)
+A = algo.get_top_n(n=10, target_uid=10)
