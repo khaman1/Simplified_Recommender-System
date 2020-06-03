@@ -56,7 +56,7 @@ class recsysBase:
         self.predictions = self.algo.test(self.testset)
         self.compute_rmse()
 
-    def get_top_n(self, n=10, SHOW_RESULT=0):
+    def get_top_n(self, target_uid=None, n=10, SHOW_RESULT=0):
         '''Return the top-N recommendation for each user from a set of predictions.
 
         Args:
@@ -69,6 +69,9 @@ class recsysBase:
         A dict where keys are user (raw) ids and values are lists of tuples:
             [(raw item id, rating estimation), ...] of size n.
         '''
+        
+        if target_uid:
+            target_uid = str(target_uid)
 
         ## Check if testset is valid
         if not self.predictions:
@@ -81,12 +84,21 @@ class recsysBase:
 
         # Then sort the predictions for each user and retrieve the k highest ones.
         for uid, user_ratings in top_n.items():
+            if target_uid and target_uid != uid:
+                continue
+            
             user_ratings.sort(key=lambda x: x[1], reverse=True)
-            top_n[uid] = user_ratings[:n]
+
+            if target_uid:
+                top_n       = user_ratings[:n]
+                break
+            else:
+                top_n[uid]  = user_ratings[:n]
 
         # Print the recommended items for each user
         if SHOW_RESULT:
             for uid, user_ratings in top_n.items():
                 print(uid, [iid for (iid, _) in user_ratings])
 
+        
         return top_n
