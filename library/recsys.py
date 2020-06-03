@@ -114,7 +114,7 @@ class recsysBase:
         if target_uid:
             target_uid = str(target_uid)
 
-        ## Check if testset is valid
+        # Check if testset is valid
         if not self.predictions:
             self.predictions = self.algo.test(self.testset)
 
@@ -138,8 +138,11 @@ class recsysBase:
 
         # Print the recommended items for each user
         if SHOW_RESULT:
-            for uid, user_ratings in top_n.items():
-                print(uid, [iid for (iid, _) in user_ratings])
+            try:
+                for uid, user_ratings in top_n.items():
+                    print(uid, [iid for (iid, _) in user_ratings])
+            except:
+                print(top_n)
 
         
         return top_n

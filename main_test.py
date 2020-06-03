@@ -9,4 +9,4 @@ class MyTest(recsysBase):
     pass
 
 
-algo = MyTest(data).tune(SHOW_RESULT=1).get_top_n(n=10, target_uid=10)
+algo = MyTest(data).tune(SHOW_RESULT=1).get_top_n(n=10, target_uid=10, SHOW_RESULT=1)
