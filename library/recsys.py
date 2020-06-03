@@ -2,21 +2,24 @@ from surprise import SVD, KNNBasic
 from surprise import accuracy
 from surprise.model_selection import train_test_split
 from collections import defaultdict
+from surprise.model_selection import GridSearchCV
 import pandas as pd
+
 
 class recsysBase:
     data        = ''
     trainset    = ''
     testset     = ''
-    
+    algorithm   = ''
     algo        = ''
     predictions = ''
     
-    def __init__(self, data, algorithm='svd', testset_percent=.25):
+    def __init__(self, data, algorithm='svd', testset_percent=0):
         if not data:
             return
             
-        self.data   = data
+        self.data           = data
+        self.algorithm      = algorithm
 
         ##
         if testset_percent == 0:
@@ -25,9 +28,9 @@ class recsysBase:
         else:
             self.trainset, self.testset = train_test_split(self.data, test_size=testset_percent)
 
-        if algorithm == 'svd':
+        if self.algorithm == 'svd':
             self.algo = SVD()
-        elif algorithm == 'knn_basic':
+        elif self.algorithm == 'knn_basic':
             self.algo = KNNBasic()
             
 
@@ -60,6 +63,31 @@ class recsysBase:
 
     def save_to_file(self, file_path='predictions.csv'):
         pd.DataFrame(algo.predictions).to_csv(file_path, index=False)
+
+    def tune(self, opt_field='rmse', param_grid =
+             {'n_epochs': [5, 10],
+              'lr_all': [0.002, 0.005],
+              'reg_all': [0.4, 0.6]
+             }, SHOW_RESULT=0):
+
+        if self.algorithm == 'svd':
+            gs = GridSearchCV(SVD, param_grid, measures=['rmse', 'mae'], cv=3)
+
+        ## Start tuning
+        gs.fit(self.data)
+
+        ## Save to self.algo
+        self.algo = gs.best_estimator[opt_field]
+        self.algo.fit(self.trainset)
+
+        if SHOW_RESULT:
+            # best RMSE score
+            print(gs.best_score['rmse'])
+
+            # combination of parameters that gave the best RMSE score
+            print(gs.best_params['rmse'])
+
+        return self
 
     def test(self):
         self.predictions = self.algo.test(self.testset)
