@@ -1,5 +1,5 @@
 from surprise import Dataset
-from library.recsys import *
+from recsys import *
 
 
 data = Dataset.load_builtin('ml-100k')
@@ -19,4 +19,4 @@ class MyTest(recsysBase):
 ##MyTest(data).tune_and_test()
 
 ##
-result = MyTest(data).get_k_neighbors(name='Copycat (1995)', k=20)
+result = MyTest(data).get_k_neighbors(name='Forrest Gump (1994)', k=10)
