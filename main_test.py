@@ -16,4 +16,7 @@ class MyTest(recsysBase):
 #a,b = MyTest(data).precision_recall_at_k(target_uid=1, threshold=4.5, num_of_testset=2)
 
 ##
-MyTest(data).tune_and_test()
+##MyTest(data).tune_and_test()
+
+##
+result = MyTest(data, algorithm='knn_baseline').get_k_neighbors(SHOW_RESULT=False)

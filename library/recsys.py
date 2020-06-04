@@ -1,7 +1,8 @@
+import io  # needed because of weird encoding of u.item file
 import random
 import pandas as pd
 from surprise import SVD, KNNBasic, KNNBaseline
-from surprise import accuracy
+from surprise import accuracy, get_dataset_dir
 from collections import defaultdict
 from surprise.model_selection import train_test_split
 from surprise.model_selection import GridSearchCV, KFold
@@ -34,6 +35,11 @@ class recsysBase:
             self.algo = SVD()
         elif self.algorithm == 'knn_basic':
             self.algo = KNNBasic()
+        elif self.algorithm == 'knn_baseline':
+            if not algo_options:
+                algo_options = {'name': 'pearson_baseline', 'user_based': False}
+                
+            self.algo = KNNBaseline(sim_options=algo_options)
             
 
         self.algo.fit(self.trainset)
@@ -214,7 +220,6 @@ class recsysBase:
             self.algo.fit(trainset)
             predictions = self.algo.test(testset)
 
-            
             '''Return precision and recall at k metrics for each user.'''
             # First map the predictions to each user.
             user_est_true = defaultdict(list)
@@ -257,3 +262,48 @@ class recsysBase:
             print(final_precision, final_recalls)
 
         return final_precision, final_recalls
+
+
+    def read_item_names(self, file_name=get_dataset_dir() + '/ml-100k/ml-100k/u.item'):
+        """Read the u.item file from MovieLens 100-k dataset and return two
+        mappings to convert raw ids into movie names and movie names into raw ids.
+        """
+
+        rid_to_name = {}
+        name_to_rid = {}
+        with io.open(file_name, 'r', encoding='ISO-8859-1') as f:
+            for line in f:
+                line = line.split('|')
+                rid_to_name[line[0]] = line[1]
+                name_to_rid[line[1]] = line[0]
+
+        return rid_to_name, name_to_rid
+
+
+    def get_k_neighbors(self, input_name='Toy Story (1995)', k=10, SHOW_RESULT=True):
+        ###########################################
+        ## You need to use algorithm='knn_baseline' at the beginning
+        ###########################################
+        
+        ## Read the mappings raw id <-> movie name
+        rid_to_name, name_to_rid = self.read_item_names()
+
+        ##
+        input_raw_id    = name_to_rid[input_name]
+        input_inner_id  = self.algo.trainset.to_inner_iid(input_raw_id)
+
+        ## Retrieve inner ids of the nearest neighbors of Toy Story.
+        input_neighbors = self.algo.get_neighbors(input_inner_id, k=k)
+
+        ## Convert inner ids of the neighbors into names.
+        input_neighbors = (self.algo.trainset.to_raw_iid(inner_id) for inner_id in input_neighbors)
+        input_neighbors = (rid_to_name[rid] for rid in input_neighbors)
+
+        ## Show result
+        if SHOW_RESULT:
+            print('The ' + str(k) + ' nearest neighbors of ' + input_name + ' are:')
+            
+            for neighbor in input_neighbors:
+                print(neighbor)
+
+        return input_neighbors
