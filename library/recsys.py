@@ -280,7 +280,7 @@ class recsysBase:
         return rid_to_name, name_to_rid
 
 
-    def get_k_neighbors(self, input_name='Toy Story (1995)', k=10, SHOW_RESULT=True):
+    def get_k_neighbors(self, name='Toy Story (1995)', k=10, SHOW_RESULT=True):
         ###########################################
         ## You need to use algorithm='knn_baseline' at the beginning
         ###########################################
@@ -293,7 +293,7 @@ class recsysBase:
         rid_to_name, name_to_rid = self.read_item_names()
 
         ##
-        input_raw_id    = name_to_rid[input_name]
+        input_raw_id    = name_to_rid[name]
         input_inner_id  = self.algo.trainset.to_inner_iid(input_raw_id)
 
         ## Retrieve inner ids of the nearest neighbors of Toy Story.
@@ -305,7 +305,7 @@ class recsysBase:
 
         ## Show result
         if SHOW_RESULT:
-            print('The ' + str(k) + ' nearest neighbors of ' + input_name + ' are:')
+            print('\nThe ' + str(k) + ' nearest neighbors of "' + name + '" are:')
             
             for neighbor in input_neighbors:
                 print(neighbor)

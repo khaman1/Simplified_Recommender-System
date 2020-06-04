@@ -19,4 +19,4 @@ class MyTest(recsysBase):
 ##MyTest(data).tune_and_test()
 
 ##
-result = MyTest(data).get_k_neighbors(k=20)
+result = MyTest(data).get_k_neighbors(name='Copycat (1995)', k=20)
