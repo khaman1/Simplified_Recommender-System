@@ -19,4 +19,4 @@ class MyTest(recsysBase):
 ##MyTest(data).tune_and_test()
 
 ##
-result = MyTest(data, algorithm='knn_baseline').get_k_neighbors(SHOW_RESULT=False)
+result = MyTest(data).get_k_neighbors(k=20)

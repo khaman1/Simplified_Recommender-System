@@ -284,7 +284,11 @@ class recsysBase:
         ###########################################
         ## You need to use algorithm='knn_baseline' at the beginning
         ###########################################
-        
+        if self.algorithm != 'knn_baseline':
+            self.__init__(data=self.data, algorithm='knn_baseline', testset_percent=0)
+
+        ###########################################
+        ###########################################
         ## Read the mappings raw id <-> movie name
         rid_to_name, name_to_rid = self.read_item_names()
 
