@@ -1,3 +1,4 @@
+import random
 import pandas as pd
 from surprise import SVD, KNNBasic, KNNBaseline
 from surprise import accuracy
@@ -93,6 +94,50 @@ class recsysBase:
 
         return self
 
+    def tune_and_test(self, unbiased_percent=0.1, opt_field='rmse', param_grid =
+             {'n_epochs': [5, 10],
+              'lr_all': [0.001, 0.01]
+             }):
+
+        ## Get RAW
+        raw_ratings         = self.data.raw_ratings
+
+        ## Shuffle ratings if you want
+        random.shuffle(raw_ratings)
+
+        ##
+        threshold           = int((1-unbiased_percent) * len(raw_ratings))
+        A_raw_ratings       = raw_ratings[:threshold]
+        B_raw_ratings       = raw_ratings[threshold:]
+
+        data                = self.data
+        data.raw_ratings    = A_raw_ratings
+
+        ## Select your best algo with grid search.
+        grid_search         = GridSearchCV(SVD, param_grid, measures=['rmse'], cv=3)
+        grid_search.fit(data)
+
+        self.algo           = grid_search.best_estimator[opt_field]
+
+        # retrain on the whole set A
+        trainset            = data.build_full_trainset()
+        self.algo.fit(trainset)
+
+        # Compute biased accuracy on A
+        predictions         = self.algo.test(trainset.build_testset())
+        print('Biased accuracy on A,', end='   ')
+        accuracy.rmse(predictions)
+
+        # Compute unbiased accuracy on B
+        testset             = data.construct_testset(B_raw_ratings)  # testset is now the set B
+        predictions         = self.algo.test(testset)
+        print('Unbiased accuracy on B,', end=' ')
+        accuracy.rmse(predictions)
+
+
+        return self
+        
+
     def test(self):
         self.predictions = self.algo.test(self.testset)
         self.compute_rmse()
@@ -151,6 +196,11 @@ class recsysBase:
 
 
     def precision_recall_at_k(self, target_uid=1, threshold=3.5, k=10, num_of_testset=5, SHOW_RESULT=True):
+        ## target_uid:  User ID to get result
+        ## threshold:   the lowerbound that the rating should be higher
+        ## k:           to get number of relevant and recommended items in top k
+        
+        
         if target_uid:
             target_uid = str(target_uid)
 
@@ -201,5 +251,9 @@ class recsysBase:
 
             final_precision.append(precisions[uid])
             final_recalls.append(recalls[uid])
+
+
+        if SHOW_RESULT:
+            print(final_precision, final_recalls)
 
         return final_precision, final_recalls
