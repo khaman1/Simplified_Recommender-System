@@ -150,14 +150,15 @@ class recsysBase:
 
 
 
-    def precision_recall_at_k(self, target_uid=1, k=10, threshold=3.5, testing_times=5, SHOW_RESULT=True):
+    def precision_recall_at_k(self, target_uid=1, threshold=3.5, k=10, num_of_testset=5, SHOW_RESULT=True):
         if target_uid:
             target_uid = str(target_uid)
 
-        ##
-        #testing_times = int(self.data.build_full_trainset().n_items * testset_percent)
         
-        kf = KFold(n_splits=testing_times)
+        kf = KFold(n_splits=num_of_testset)
+
+        final_precision = []
+        final_recalls   = []
 
         for trainset, testset in kf.split(self.data):
             self.algo.fit(trainset)
@@ -173,9 +174,6 @@ class recsysBase:
             precisions = dict()
             recalls = dict()
             for uid, user_ratings in user_est_true.items():
-                if target_uid and target_uid != uid:
-                    continue 
-
                 # Sort user ratings by estimated value
                 user_ratings.sort(key=lambda x: x[0], reverse=True)
 
@@ -195,18 +193,13 @@ class recsysBase:
                 # Recall@K: Proportion of relevant items that are recommended
                 recalls[uid] = n_rel_and_rec_k / n_rel if n_rel != 0 else 1
 
-                # End because you are working with only one uid
-                if target_uid:
-                    break
 
             if SHOW_RESULT:
-                if target_uid:
-                    print("Precision: " + str(precisions[uid]))
-                    print("Recall: " + str(recalls[uid]))
-                else:
-                    # Precision and recall can then be averaged over all users
-                    print(sum(prec for prec in precisions.values()) / len(precisions))
-                    print(sum(rec for rec in recalls.values()) / len(recalls))
+                print('Relevant: ' + str(sum(prec for prec in precisions.values()) / len(precisions)))
+                print('Recommended: ' + str(sum(rec for rec in recalls.values()) / len(recalls)))
 
 
-        return precisions[uid], recalls[uid]
+            final_precision.append(precisions[uid])
+            final_recalls.append(recalls[uid])
+
+        return final_precision, final_recalls
