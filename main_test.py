@@ -9,4 +9,6 @@ class MyTest(recsysBase):
     pass
 
 
-algo = MyTest(data).tune(SHOW_RESULT=1).get_top_n(n=10, target_uid=10, SHOW_RESULT=1)
+#print(MyTest(data).tune().get_top_n(n=10, target_uid=10, SHOW_RESULT=1))
+
+a,b = MyTest(data).precision_recall_at_k(target_uid=1)

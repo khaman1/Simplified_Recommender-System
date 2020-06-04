@@ -1,9 +1,10 @@
-from surprise import SVD, KNNBasic
-from surprise import accuracy
-from surprise.model_selection import train_test_split
-from collections import defaultdict
-from surprise.model_selection import GridSearchCV
 import pandas as pd
+from surprise import SVD, KNNBasic, KNNBaseline
+from surprise import accuracy
+from collections import defaultdict
+from surprise.model_selection import train_test_split
+from surprise.model_selection import GridSearchCV, KFold
+
 
 
 class recsysBase:
@@ -59,20 +60,19 @@ class recsysBase:
         accuracy.rmse(self.predictions)
 
     def load_from_file(self, file_path='predictions.csv'):
-        self.predictions = np.genfromtxt(file_path, delimiter=',')
+        self.predictions = pd.read_csv(filepath)
 
     def save_to_file(self, file_path='predictions.csv'):
         pd.DataFrame(algo.predictions).to_csv(file_path, index=False)
 
     def benchmark(self):
-        if self.algorithm == 'svd':
-            cross_validate(SVD(), data, measures=['RMSE', 'MAE'], cv=5, verbose=True)
+        cross_validate(self.algo, data, measures=['RMSE', 'MAE'], cv=5, verbose=True)
         
     def tune(self, opt_field='rmse', param_grid =
              {'n_epochs': [5, 10],
               'lr_all': [0.002, 0.005],
               'reg_all': [0.4, 0.6]
-             }, SHOW_RESULT=0):
+             }, SHOW_RESULT=False):
 
         if self.algorithm == 'svd':
             gs = GridSearchCV(SVD, param_grid, measures=['rmse', 'mae'], cv=3)
@@ -97,7 +97,7 @@ class recsysBase:
         self.predictions = self.algo.test(self.testset)
         self.compute_rmse()
 
-    def get_top_n(self, target_uid=None, n=10, SHOW_RESULT=0):
+    def get_top_n(self, target_uid=None, n=10, SHOW_RESULT=False):
         '''Return the top-N recommendation for each user from a set of predictions.
 
         Args:
@@ -146,3 +146,67 @@ class recsysBase:
 
         
         return top_n
+
+
+
+
+    def precision_recall_at_k(self, target_uid=1, k=10, threshold=3.5, testing_times=5, SHOW_RESULT=True):
+        if target_uid:
+            target_uid = str(target_uid)
+
+        ##
+        #testing_times = int(self.data.build_full_trainset().n_items * testset_percent)
+        
+        kf = KFold(n_splits=testing_times)
+
+        for trainset, testset in kf.split(self.data):
+            self.algo.fit(trainset)
+            predictions = self.algo.test(testset)
+
+            
+            '''Return precision and recall at k metrics for each user.'''
+            # First map the predictions to each user.
+            user_est_true = defaultdict(list)
+            for uid, _, true_r, est, _ in predictions:
+                user_est_true[uid].append((est, true_r))
+
+            precisions = dict()
+            recalls = dict()
+            for uid, user_ratings in user_est_true.items():
+                if target_uid and target_uid != uid:
+                    continue 
+
+                # Sort user ratings by estimated value
+                user_ratings.sort(key=lambda x: x[0], reverse=True)
+
+                # Number of relevant items
+                n_rel = sum((true_r >= threshold) for (_, true_r) in user_ratings)
+
+                # Number of recommended items in top k
+                n_rec_k = sum((est >= threshold) for (est, _) in user_ratings[:k])
+
+                # Number of relevant and recommended items in top k
+                n_rel_and_rec_k = sum(((true_r >= threshold) and (est >= threshold))
+                                      for (est, true_r) in user_ratings[:k])
+
+                # Precision@K: Proportion of recommended items that are relevant
+                precisions[uid] = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 1
+
+                # Recall@K: Proportion of relevant items that are recommended
+                recalls[uid] = n_rel_and_rec_k / n_rel if n_rel != 0 else 1
+
+                # End because you are working with only one uid
+                if target_uid:
+                    break
+
+            if SHOW_RESULT:
+                if target_uid:
+                    print("Precision: " + str(precisions[uid]))
+                    print("Recall: " + str(recalls[uid]))
+                else:
+                    # Precision and recall can then be averaged over all users
+                    print(sum(prec for prec in precisions.values()) / len(precisions))
+                    print(sum(rec for rec in recalls.values()) / len(recalls))
+
+
+        return precisions[uid], recalls[uid]
